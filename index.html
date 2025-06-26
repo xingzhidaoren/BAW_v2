@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>黑白棋游戏2.0</title>
+  <title>黑白棋游戏3.0</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.15/babel.min.js"></script>
@@ -170,6 +170,32 @@
           else if (board[i][j] === 3 - player) score -= weights[i][j];
         }
       }
+      if (difficulty === 'master') {
+        // Mobility: Reward maximizing player's moves and minimizing opponent's
+        const playerMoves = getValidMoves(board, player).length;
+        const opponentMoves = getValidMoves(board, 3 - player).length;
+        score += (playerMoves - opponentMoves) * 15;
+
+        // Corner control
+        const corners = [[0,0], [0,7], [7,0], [7,7]];
+        corners.forEach(([i, j]) => {
+          if (board[i][j] === player) score += 50;
+          else if (board[i][j] === 3 - player) score -= 50;
+        });
+
+        // Edge stability: Reward pieces on edges that are less likely to be flipped
+        let stableScore = 0;
+        const edges = [
+          ...board[0], ...board[7], // Top and bottom rows
+          ...board.map(row => row[0]), // Left column
+          ...board.map(row => row[7])  // Right column
+        ];
+        edges.forEach(cell => {
+          if (cell === player) stableScore += 10;
+          else if (cell === 3 - player) stableScore -= 10;
+        });
+        score += stableScore;
+      }
     //   
     // if (difficulty === 'master') {
     //     const validMoves = getValidMoves(board, player).length;
@@ -217,7 +243,7 @@
       if (validMoves.length === 0) return null;
       let bestMove = null;
       let bestScore = -Infinity;
-      const depth = difficulty === 'novice' ? 2 : difficulty === 'normal' ? 6 : 8;
+      const depth = difficulty === 'novice' ? 2 : difficulty === 'normal' ? 6 : 6;
       for (let move of validMoves) {
         const { newBoard } = makeMove(board, move, player);
         const score = minimax(newBoard, depth, -Infinity, Infinity, false, player, difficulty);
